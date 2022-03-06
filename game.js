@@ -233,7 +233,7 @@ State.prototype.gameWin = function () {
       (1 - gameWinProgress / 255) * 190
     );
   } else {
-    window.location.href = "/end.html";
+    window.location.href = "end.html";
   }
 };
 
