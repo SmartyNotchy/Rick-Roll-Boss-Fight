@@ -2,9 +2,6 @@ var Player = class Player {
   constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.lives = 3;
-    this.cooldown = 1500;
-    this.injured = false;
   }
 }
 
@@ -18,35 +15,27 @@ Player.prototype.move = function(direction) {
 }
 
 Player.prototype.checkCollision = function(threats) {
-  if (!this.injured) {
-    for (let i = 0; i < threats.length; i++) {
-      let threat = threats[i];
-      if (threat.type == "Pellet") {
-        if (threat.x < (this.x + 15) &&
-            threat.x > (this.x - 15) &&
-            threat.y < (this.y + 15) &&
-            threat.y > (this.y - 15)) {
+  for (let i = 0; i < threats.length; i++) {
+    let threat = threats[i];
+    if (threat.type == "Pellet") {
+      if (threat.x < (this.x + 15) &&
+          threat.x > (this.x - 15) &&
+          threat.y < (this.y + 15) &&
+          threat.y > (this.y - 15)) {
+        state.gameLose();
+      }
+    } else if (threat.type == "Laser" && threat.charge <= -10) {
+      if (threat.start[0] !== threat.end[0]) {
+        let slope = (threat.start[1] - threat.end[1])/(threat.start[0] - threat.end[0]);
+        let yIntercept = (-1 * (threat.start[0]) * slope) + threat.start[1];
+        let yTest = (slope * this.x + yIntercept)
+        if (Math.abs(yTest - this.y) <= 15) state.gameLose();
+      } else {
+        if (threat.start[0] <= (this.x + 10) &&
+            threat.start[0] >= (this.x - 10)) {
           state.gameLose();
         }
-      } else if (threat.type == "Laser" && threat.charge <= -10) {
-        if (threat.start[0] !== threat.end[0]) {
-          let slope = (threat.start[1] - threat.end[1])/(threat.start[0] - threat.end[0]);
-          let yIntercept = (-1 * (threat.start[0]) * slope) + threat.start[1];
-          let yTest = (slope * this.x + yIntercept)
-          if (Math.abs(yTest - this.y) <= 15) state.gameLose();
-        } else {
-          if (threat.start[0] <= (this.x + 10) &&
-              threat.start[0] >= (this.x - 10)) {
-            state.gameLose();
-          }
-        }
       }
-    }
-  } else {
-    this.cooldown-=10;
-    if (this.cooldown <= 0) {
-      this.injured = false;
-      this.cooldown = 4000;
     }
   }
 }
@@ -103,7 +92,6 @@ var State = class State {
 
 State.prototype.draw = function() {
   let ctx = this.canvas.getContext("2d");
-
   // Draw Game Screen
   ctx.fillStyle = "white";
   ctx.fillRect(0, 0, 1000, 500);
@@ -113,7 +101,6 @@ State.prototype.draw = function() {
   // Draw Player
 
   ctx.fillStyle = "cyan";
-  if (this.player.injured) ctx.fillStyle = "pink";
   ctx.fillRect(this.player.x - 10, this.player.y - 10, 20, 20);
   
   // Draw Threats
@@ -137,12 +124,6 @@ State.prototype.draw = function() {
       ctx.lineTo(threat.end[0], threat.end[1]);
       ctx.stroke();
     }
-  }
-
-  // Update Lives Counter
-  for (let i = 0; i < this.player.lives; i++) {
-    ctx.fillStyle = "lime";
-    ctx.fillRect(i * 30 + 20, 20, 10, 10);
   }
 }
 
@@ -195,38 +176,32 @@ State.prototype.update = function() {
   this.draw();
 }
 
-var reloaded = false;
-
 State.prototype.gameLose = function() {
-  this.player.injured = true;
-  this.player.lives--;
-  if (this.player.lives <= 0) {
-    clearInterval(gameInterval);
-    music.pause();
+  clearInterval(gameInterval);
+  music.pause();
 
-    let ctx = this.canvas.getContext("2d");
-    
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, 1000, 500);
-    ctx.fillStyle = "black";
-    ctx.fillRect(5, 5, 990, 490);
-    
-    ctx.font = "60px Courier";
-    ctx.fillStyle = "White";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("GAME OVER!", 500, 200);
-    ctx.font = "20px Courier";
-    ctx.fillText("Restarting in 3 seconds...", 500, 350);
-    
-    setTimeout(function() {
-      let attempts = localStorage.getItem("attempts");
-      if (!reloaded) window.location.reload();
-      reloaded = true;
-    }, 3000);
-    
-    setInterval(function() { state.gameLose(); }, 1000);
-  }
+  let ctx = this.canvas.getContext("2d");
+  
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, 1000, 500);
+  ctx.fillStyle = "black";
+  ctx.fillRect(5, 5, 990, 490);
+  
+  ctx.font = "60px Courier";
+	ctx.fillStyle = "White";
+	ctx.textAlign = "center";
+	ctx.textBaseline = "middle";
+  ctx.fillText("GAME OVER!", 500, 200);
+  ctx.font = "20px Courier";
+  ctx.fillText("Restarting in 3 seconds...", 500, 350);
+  
+  setTimeout(function() {
+    let attempts = localStorage.getItem("attempts");
+    localStorage.setItem("attempts", (attempts ? attempts + 1 : 1));
+    window.location.reload();
+  }, 3000);
+  
+  setInterval(function() { state.gameLose(); }, 1000);
 }
 
 var gameWinProgress = 0;
@@ -240,7 +215,7 @@ State.prototype.gameWin = function() {
     ctx.fillRect(0, 0, 1000, 500);
     ctx.fillStyle = "rgb(" + Math.floor(gameWinProgress) + ", " + Math.floor(gameWinProgress) + ", " + Math.floor(gameWinProgress) + ")"
     ctx.fillRect(5, 5, 990, 490);
-  
+
     // Draw Player
 
     ctx.fillStyle = "cyan";
