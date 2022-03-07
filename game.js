@@ -221,7 +221,8 @@ State.prototype.gameLose = function() {
     
     setTimeout(function() {
       let attempts = localStorage.getItem("attempts");
-      if (!reloaded) window.location.reload();
+      if (!reloaded) 
+        location.reload();
       reloaded = true;
     }, 3000);
     
@@ -249,7 +250,7 @@ State.prototype.gameWin = function() {
     document.getElementById("rick").width = Math.floor((1 - gameWinProgress/255)*181);
     document.getElementById("rick").height = Math.floor((1 - gameWinProgress/255)*190);
   } else {
-    window.location.href="/end.html";
+    window.location.href="end.html";
   }
 }
 
